@@ -1,9 +1,9 @@
 ﻿var rounds = new InputProvider<RoundRecord?>("Input.txt", GetRoundRecord).Where(w => w != null).Cast<RoundRecord>().ToList();
 
-Console.WriteLine($"Part 1: {rounds.Select(CalculateRoundScorePart1).Sum()}");
-Console.WriteLine($"Part 2: {rounds.Select(CalculateRoundScorePart2).Sum()}");
+Console.WriteLine($"Part 1: {rounds.Select(CalculateRoundScore).Sum()}");
+Console.WriteLine($"Part 2: {rounds.Select(CalculateMoveForOutcome).Select(CalculateRoundScore).Sum()}");
 
-int CalculateRoundScorePart1(RoundRecord record)
+int CalculateRoundScore(RoundRecord record)
 {
     int score = 0;
 
@@ -17,7 +17,6 @@ int CalculateRoundScorePart1(RoundRecord record)
     };
 
     // plus the score for the outcome of the round (0 if you lost, 3 if the round was a draw, and 6 if you won)
-
     if (record.Player1Move == record.Player2Move)
     {
         score += 3;
@@ -65,7 +64,7 @@ int CalculateRoundScorePart1(RoundRecord record)
     return score;
 }
 
-int CalculateRoundScorePart2(RoundRecord record)
+RoundRecord CalculateMoveForOutcome(RoundRecord record)
 {
     Move augmentedPlayerMove;
 
@@ -104,9 +103,7 @@ int CalculateRoundScorePart2(RoundRecord record)
         }
     }
 
-    var augmentedRecord = new RoundRecord(record.Player1Move, augmentedPlayerMove, record.DesiredOutcome);
-
-    return CalculateRoundScorePart1(augmentedRecord);
+    return new RoundRecord(record.Player1Move, augmentedPlayerMove, record.DesiredOutcome);
 }
 
 static bool GetRoundRecord(string? input, out RoundRecord? value)
