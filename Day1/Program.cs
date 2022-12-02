@@ -8,12 +8,10 @@ Console.WriteLine($"Part 2: Max 3: {elves.OrderByDescending(w => w.TotalCalories
 
 class Elf
 {
-    private readonly List<int> foods = new();
-
-    public int TotalCalories => this.foods.Sum();
+    public int TotalCalories { get; private set; } = 0;
 
     public void AddItem(int calories)
     {
-        this.foods.Add(calories);
+        this.TotalCalories += calories;
     }
 }
