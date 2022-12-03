@@ -39,5 +39,5 @@ for (int i = 0; i < backpacks.Length; i += 3)
 
 Console.WriteLine($"Part 2: {badgePrioritySum}");
 
-int GetItemPriority(char item) =>
+static int GetItemPriority(char item) =>
     item - (char.IsLower(item) ? 96 : 38);
