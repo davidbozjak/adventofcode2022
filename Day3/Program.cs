@@ -13,7 +13,6 @@ foreach (var backpack in backpacks)
         var item = compartment1[i];
         if (compartment2.Contains(item))
         {
-            //found!
             prioritySum += GetItemPriority(item);
             break;
         }
@@ -32,7 +31,6 @@ for (int i = 0; i < backpacks.Length; i += 3)
 
         if (backpacks[i + 1].Contains(item) && backpacks[i + 2].Contains(item))
         {
-            //found
             badgePrioritySum += GetItemPriority(item);
             break;
         }
@@ -41,8 +39,5 @@ for (int i = 0; i < backpacks.Length; i += 3)
 
 Console.WriteLine($"Part 2: {badgePrioritySum}");
 
-int GetItemPriority(char item)
-{
-    int priority = item - (char.IsLower(item) ? 96 : 38);
-    return priority;
-}
+int GetItemPriority(char item) =>
+    item - (char.IsLower(item) ? 96 : 38);
