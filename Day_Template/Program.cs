@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-Regex numRegex = new(@"\d+");
+Regex numRegex = new(@"-?\d+");
 Regex hexColorRegex = new(@"#[0-9a-z][0-9a-z][0-9a-z][0-9a-z][0-9a-z][0-9a-z]");
 
 var singleDigitIntParser = new SingleLineStringInputParser<int>(int.TryParse, str => str.ToCharArray().Select(w => w.ToString()).ToArray());
