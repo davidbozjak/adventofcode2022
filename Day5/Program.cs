@@ -30,5 +30,3 @@ static bool GetMoveInstruction(string? input, out MoveInstruction? value)
 }
 
 record MoveInstruction(int NumberOfCrates, int FromStackId, int ToStackId);
-
-record Crate(char Name);

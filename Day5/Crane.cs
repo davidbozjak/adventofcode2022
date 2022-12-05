@@ -1,5 +1,7 @@
 ﻿abstract class Crane
 {
+    protected record Crate(char Name);
+
     protected readonly List<Stack<Crate>> stacks;
 
     public Crane(string[] initialState)
