@@ -4,76 +4,15 @@ var moveInstructions = new InputProvider<MoveInstruction?>("Input_Moves.txt", Ge
 
 var initialState = new StringInputProvider("Input_Crates.txt").ToArray();
 
-var stacks = GetStacksFromInitialState(initialState);
+var crateMover = new CrateMover9000(initialState);
+crateMover.ApplyMoveInstructions(moveInstructions);
 
-foreach (var move in moveInstructions)
-{
-    for (int i = 0; i < move.NumberOfCrates; i++)
-    {
-        var crate = stacks[move.FromStackId - 1].Pop();
-        stacks[move.ToStackId - 1].Push(crate);
-    }
-}
+Console.WriteLine($"Part 1: {crateMover.GetTopRow()}");
 
-Console.WriteLine($"Part 1: {GetTopRow(stacks)}");
+var advancedCrateMover = new CrateMover9001(initialState);
+advancedCrateMover.ApplyMoveInstructions(moveInstructions);
 
-stacks = GetStacksFromInitialState(initialState);
-
-foreach (var move in moveInstructions)
-{
-    var movingTogether = new List<Crate>();
-    for (int i = 0; i < move.NumberOfCrates; i++)
-    {
-        var crate = stacks[move.FromStackId - 1].Pop();
-        movingTogether.Add(crate);
-    }
-
-    movingTogether.Reverse();
-
-    foreach (var crate in movingTogether)
-    {
-        stacks[move.ToStackId - 1].Push(crate);
-    }
-}
-
-Console.WriteLine($"Part 2: {GetTopRow(stacks)}");
-
-static string GetTopRow(List<Stack<Crate>> stacks)
-{
-    var row = new List<char>();
-    for (int i = 0; i < stacks.Count; i++)
-    {
-        row.Add(stacks[i].Peek().Name);
-    }
-    return new string(row.ToArray());
-}
-
-static List<Stack<Crate>> GetStacksFromInitialState(string[] initialState)
-{
-    var stacks = new List<Stack<Crate>>();
-
-    var numberOfStacks = int.Parse(initialState[^1][^2..^1]);
-
-    stacks.AddRange(Enumerable.Range(0, numberOfStacks).Select(w => new Stack<Crate>()));
-
-    for (int rowIndex = initialState.Length - 2; rowIndex >= 0; rowIndex--)
-    {
-        var line = initialState[rowIndex];
-
-        for (int i = 0; i < line.Length; i++)
-        {
-            if (line[i] == '[')
-            {
-                int stackIndex = (i + 1) / 4;
-                var name = line[++i];
-                var crate = new Crate(name);
-                stacks[stackIndex].Push(crate);
-            }
-        }
-    }
-
-    return stacks;
-}
+Console.WriteLine($"Part 2: {advancedCrateMover.GetTopRow()}");
 
 static bool GetMoveInstruction(string? input, out MoveInstruction? value)
 {
