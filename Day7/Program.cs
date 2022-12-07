@@ -1,6 +1,6 @@
 ﻿var input = new StringInputProvider("Input.txt").Skip(1).ToArray();
 
-var root = new AoCDirectory() { Name = "/", Parent = null };
+var root = new AoCDirectory("/") { Parent = null };
 var currentDirectory = root;
 
 bool isInLS = false;
@@ -23,7 +23,7 @@ foreach (var line in input)
             else
             {
                 var fileDescriptors = line.Split(" ");
-                var file = new AocFile() { Name = fileDescriptors[1], Size = long.Parse(fileDescriptors[0]), Parent = currentDirectory };
+                var file = new AocFile(long.Parse(fileDescriptors[0]), fileDescriptors[1], currentDirectory);
                 currentDirectory.AddFile(file);
             }
             continue;
@@ -57,11 +57,11 @@ Console.WriteLine($"Part 2: {AoCDirectory.AllCreatedInstances.Where(w => w.Size 
 
 class AoCDirectory
 {
-    private static List<AoCDirectory> allCreatedInstances = new List<AoCDirectory>();
+    private static readonly List<AoCDirectory> allCreatedInstances = new();
     public static IEnumerable<AoCDirectory> AllCreatedInstances => allCreatedInstances;
 
     public AoCDirectory? Parent { get; init; }
-    public string Name { get; init; }
+    public string Name { get; }
 
     private readonly List<AoCDirectory> subdirs = new();
     private readonly List<AocFile> files = new();
@@ -69,8 +69,9 @@ class AoCDirectory
 
     public long Size => this.cachedSize.Value;
 
-    public AoCDirectory()
+    public AoCDirectory(string name)
     {
+        this.Name = name;
         this.cachedSize = new Cached<long>(() => this.subdirs.Sum(w => w.Size) + this.files.Sum(w => w.Size));
         allCreatedInstances.Add(this);
     }
@@ -79,7 +80,7 @@ class AoCDirectory
     {
         this.cachedSize.Reset();
 
-        var subdir = new AoCDirectory() { Name = name, Parent = this };
+        var subdir = new AoCDirectory(name) { Parent = this };
         this.subdirs.Add(subdir);
         return subdir;
     }
@@ -99,8 +100,15 @@ class AoCDirectory
 
 class AocFile
 {
-    public long Size { get; init; }
-    public string Name { get; init; }
+    public long Size { get; }
+    public string Name { get; }
 
-    public AoCDirectory Parent { get; init; }
+    public AoCDirectory Parent { get; }
+
+    public AocFile(long size, string name, AoCDirectory parent)
+    {
+        Size = size;
+        Name = name;
+        Parent = parent;
+    }
 }
