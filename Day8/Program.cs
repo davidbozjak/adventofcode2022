@@ -19,6 +19,9 @@ for (int y = 0; y < mapHeight; y++)
     }
 }
 
+var tilesMap = tiles.ToDictionary(w => (w.Position.X, w.Position.Y));
+
+
 foreach (var tile in tiles)
 {
     tile.IsVisibleFromBottom = IsVisibleFromBottom(tile, tiles);
@@ -46,7 +49,7 @@ bool IsVisibleFromTop(TreeTile tile, IEnumerable<TreeTile> allTiles)
 
     for (int y = tile.Position.Y - 1; y >= 0; y--)
     {
-        var t = GetTileAt(tile.Position.X, y, allTiles);
+        var t = GetTileAt(tile.Position.X, y);
 
         if (t.TreeHeight >= tile.TreeHeight)
             return false;
@@ -62,7 +65,7 @@ bool IsVisibleFromBottom(TreeTile tile, IEnumerable<TreeTile> allTiles)
 
     for (int y = tile.Position.Y + 1; y < mapHeight; y++)
     {
-        var t = GetTileAt(tile.Position.X, y, allTiles);
+        var t = GetTileAt(tile.Position.X, y);
 
         if (t.TreeHeight >= tile.TreeHeight)
             return false;
@@ -78,7 +81,7 @@ bool IsVisibleFromRight(TreeTile tile, IEnumerable<TreeTile> allTiles)
 
     for (int x = tile.Position.X + 1; x < mapWidth; x++)
     {
-        var t = GetTileAt(x, tile.Position.Y, allTiles);
+        var t = GetTileAt(x, tile.Position.Y);
 
         if (t.TreeHeight >= tile.TreeHeight)
             return false;
@@ -94,7 +97,7 @@ bool IsVisibleFromLeft(TreeTile tile, IEnumerable<TreeTile> allTiles)
 
     for (int x = tile.Position.X - 1; x >= 0; x--)
     {
-        var t = GetTileAt(x, tile.Position.Y, allTiles);
+        var t = GetTileAt(x, tile.Position.Y);
 
         if (t.TreeHeight >= tile.TreeHeight)
             return false;
@@ -112,7 +115,7 @@ int GetViewDistanceTop(TreeTile tile, IEnumerable<TreeTile> allTiles)
 
     for (int y = tile.Position.Y - 1; y >= 0; y--)
     {
-        var t = GetTileAt(tile.Position.X, y, allTiles);
+        var t = GetTileAt(tile.Position.X, y);
 
         distnace++;
 
@@ -134,7 +137,7 @@ int GetViewDistanceBottom(TreeTile tile, IEnumerable<TreeTile> allTiles)
 
     for (int y = tile.Position.Y + 1; y < mapHeight; y++)
     {
-        var t = GetTileAt(tile.Position.X, y, allTiles);
+        var t = GetTileAt(tile.Position.X, y);
 
         distnace++;
 
@@ -156,7 +159,7 @@ int GetViewDistanceRight(TreeTile tile, IEnumerable<TreeTile> allTiles)
 
     for (int x = tile.Position.X + 1; x < mapWidth; x++)
     {
-        var t = GetTileAt(x, tile.Position.Y, allTiles);
+        var t = GetTileAt(x, tile.Position.Y);
 
         distnace++;
 
@@ -178,7 +181,7 @@ int GetViewDistanceLeft(TreeTile tile, IEnumerable<TreeTile> allTiles)
 
     for (int x = tile.Position.X - 1; x >= 0; x--)
     {
-        var t = GetTileAt(x, tile.Position.Y, allTiles);
+        var t = GetTileAt(x, tile.Position.Y);
 
         distnace++;
 
@@ -191,8 +194,8 @@ int GetViewDistanceLeft(TreeTile tile, IEnumerable<TreeTile> allTiles)
     return distnace;
 }
 
-TreeTile GetTileAt(int x, int y, IEnumerable<TreeTile> allTiles) =>
-    allTiles.First(w => w.Position.X == x && w.Position.Y == y);
+TreeTile GetTileAt(int x, int y) =>
+    tilesMap[(x, y)];
 
 class TreeTile : IWorldObject, INode, IEquatable<Tile>
 {
