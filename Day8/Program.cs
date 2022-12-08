@@ -21,7 +21,6 @@ for (int y = 0; y < mapHeight; y++)
 
 var tilesMap = tiles.ToDictionary(w => (w.Position.X, w.Position.Y));
 
-
 foreach (var tile in tiles)
 {
     tile.IsVisibleFromBottom = IsVisibleFromBottom(tile, tiles);
@@ -37,7 +36,7 @@ foreach (var tile in tiles)
 
 var world = new SimpleWorld<TreeTile>(tiles);
 var printer = new WorldPrinter();
-//printer.Print(world);
+printer.Print(world);
 
 Console.WriteLine($"Part 1: {tiles.Count(w => w.IsVisibleFromAnywhere)}");
 Console.WriteLine($"Part 2: {tiles.Max(w => w.ScenicScore)}");
@@ -197,12 +196,12 @@ int GetViewDistanceLeft(TreeTile tile, IEnumerable<TreeTile> allTiles)
 TreeTile GetTileAt(int x, int y) =>
     tilesMap[(x, y)];
 
-class TreeTile : IWorldObject, INode, IEquatable<Tile>
+class TreeTile : IWorldObject
 {
     public Point Position { get; }
 
     //public virtual char CharRepresentation => this.TreeHeight.ToString()[0];
-    public virtual char CharRepresentation => this.IsVisibleFromAnywhere ? '#' : '.'; 
+    public virtual char CharRepresentation => this.IsVisibleFromAnywhere ? '^' : '.'; 
 
     public int Z => 0;
 
@@ -224,28 +223,9 @@ class TreeTile : IWorldObject, INode, IEquatable<Tile>
 
     public int TreeHeight { get; }
 
-    public int Cost => 1;
-
     public TreeTile(int x, int y, int height)
     {
         Position = new Point(x, y);
         this.TreeHeight = height;
-    }
-
-    public bool Equals(Tile? other)
-    {
-        if (other == null) return false;
-
-        return this.Position.Equals(other.Position);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as Tile);
-    }
-
-    public override int GetHashCode()
-    {
-        return this.Position.GetHashCode();
     }
 }
