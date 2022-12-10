@@ -39,11 +39,6 @@ class Computer
 
         for (int instructionLine = 0; instructionLine >= 0 && instructionLine < instructions.Count; instructionLine++, this.InstructionsExecuted++)
         {
-            //if (instructionPointerRegister.Value == 29)
-            //{
-            //    Console.WriteLine($"Debugging computer, accepted input would be: {GetRegisterValue("3")}");
-            //}
-
             var instruction = instructions[instructionLine];
 
             var parts = instruction.Split(" ");
