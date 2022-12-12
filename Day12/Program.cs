@@ -16,10 +16,10 @@ printer.Print(worldWithPath);
 
 Console.WriteLine($"Part 1: {path.Count - 1}");
 
-var tilesWithLowestElevation = world.WorldObjects.Cast<HighTile>().Where(w => w.Z == 0).ToList();
+var tilesWithLowestElevation = world.WorldObjects.Where(w => w.Z == 0).ToList();
 
 int min = int.MaxValue;
-foreach (var potentialStart in tilesWithLowestElevation)
+foreach (HighTile potentialStart in tilesWithLowestElevation)
 {
     var potentialPath = AStarPathfinder.FindPath<Tile>(potentialStart, end, w => w.Position.Distance(end.Position), w => w.TraversibleNeighbours);
 
@@ -38,6 +38,13 @@ Console.WriteLine($"Part 2: {min}");
 
 static IEnumerable<Tile> GetReachableNeighbours(Tile t, IEnumerable<Tile> tiles)
 {
+    /*
+     * To avoid needing to get out your climbing gear, 
+     * the elevation of the destination square can be at most one higher than the elevation of your current square; 
+     * that is, if your current elevation is m, you could step to elevation n, but not to elevation o. 
+     * (This also means that the elevation of the destination square can be much lower than the elevation of your current square.)
+     */
+
     foreach (var tile in tiles)
     {
         var diff = tile.Z - t.Z;
