@@ -11,6 +11,9 @@ var end = world.WorldObjects.Cast<HighTile>().Where(w => w.CharRepresentation ==
 
 var path = AStarPathfinder.FindPath<Tile>(start, end, w => w.Position.Distance(end.Position), w => w.TraversibleNeighbours);
 
+var worldWithPath = new WorldWithPath<Tile>(world, path);
+printer.Print(worldWithPath);
+
 Console.WriteLine($"Part 1: {path.Count - 1}");
 
 var tilesWithLowestElevation = world.WorldObjects.Cast<HighTile>().Where(w => w.Z == 0).ToList();
