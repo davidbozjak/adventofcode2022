@@ -40,7 +40,7 @@ static IEnumerable<Tile> GetReachableNeighbours(Tile t, IEnumerable<Tile> tiles)
 {
     foreach (var tile in tiles)
     {
-        var diff = ((HighTile)tile).Z - ((HighTile)t).Z;
+        var diff = tile.Z - t.Z;
         if (diff <= 1)
         {
             yield return tile;
@@ -50,7 +50,7 @@ static IEnumerable<Tile> GetReachableNeighbours(Tile t, IEnumerable<Tile> tiles)
 
 class HighTile : Tile
 {
-    new public int Z { get; }
+    public override int Z { get; }
 
     public override char CharRepresentation { get; }
 

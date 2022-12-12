@@ -9,7 +9,7 @@ namespace SantasToolbox
         
         public virtual char CharRepresentation => this.IsTraversable ? '.' : '#';
 
-        public int Z => 0;
+        public virtual int Z => 0;
 
         public bool IsTraversable { get; }
 
