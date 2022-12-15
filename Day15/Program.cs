@@ -7,9 +7,9 @@ var pairs = new InputProvider<SensorBeconPair?>("Input.txt", GetSensorBeconPair)
 
 int targetY = 2000000;
 
-var rangesOnTargetRow = GetRangesForRow(targetY, pairs);
+var intervalsOnTargetRow = GetIntervalsForRow(targetY, pairs);
 
-int canNotExist = rangesOnTargetRow.Sum(w => w.End - w.Start);
+int canNotExist = intervalsOnTargetRow.Sum(w => w.Length);
 
 //Console.WriteLine(stopwatch.ElapsedMilliseconds);
 Console.WriteLine($"Part 1: {canNotExist}");
@@ -18,19 +18,19 @@ Console.WriteLine($"Part 1: {canNotExist}");
 Point? beconPoint = null;
 
 int searchSpace = 4000000;
-var wholeRowRange = new Range(0, searchSpace);
+var wholeRowInterval = new ClosedInterval(0, searchSpace);
 
 for (int y = 0; y <= searchSpace && beconPoint == null; y++)
 {
-    var rangesForRow = GetRangesForRow(y, pairs);
+    var intervalsForRow = GetIntervalsForRow(y, pairs);
 
-    if (rangesForRow.Any(w => w.CoversWholeRange(wholeRowRange)))
+    if (intervalsForRow.Any(w => w.CoversWholeInterval(wholeRowInterval)))
     {
         continue;
     }
 
-    var xThresholdValues = rangesForRow.SelectMany(w => new[] { w.Start, w.End }).OrderBy(w => w)
-        .Where(w => wholeRowRange.ContainsPoint(w))
+    var xThresholdValues = intervalsForRow.SelectMany(w => new[] { w.Start, w.End }).OrderBy(w => w)
+        .Where(w => wholeRowInterval.ContainsPoint(w))
         .ToArray();
 
     if (xThresholdValues.Length != 2)
@@ -47,45 +47,45 @@ if (beconPoint == null) throw new Exception();
 //Console.WriteLine(stopwatch.ElapsedMilliseconds);
 Console.WriteLine($"Part 2: {((long)beconPoint.Value.X * 4000000) + beconPoint.Value.Y}");
 
-static IEnumerable<Range> GetRangesForRow(int y, IEnumerable<SensorBeconPair> pairs)
+static IEnumerable<ClosedInterval> GetIntervalsForRow(int y, IEnumerable<SensorBeconPair> pairs)
 {
-    var nonOverlappingRanges = new List<Range>();
+    var nonOverlappingIntervals = new List<ClosedInterval>();
 
-    var rangesForRow = pairs.Select(w => w.GetCoveredRangeInRow(y))
+    var intervalsForRow = pairs.Select(w => w.GetCoveredIntervalForRow(y))
         .Where(w => w != null)
-        .Cast<Range>()
+        .Cast<ClosedInterval>()
         .ToList();
 
-    var coveredRange = rangesForRow.First();
-    rangesForRow = rangesForRow.Skip(1).ToList();
+    var coveredInterval = intervalsForRow.First();
+    intervalsForRow = intervalsForRow.Skip(1).ToList();
 
-    while (rangesForRow.Count > 0)
+    while (intervalsForRow.Count > 0)
     {
         bool removedAny = false;
 
-        for (int i = 0; i < rangesForRow.Count; i++)
+        for (int i = 0; i < intervalsForRow.Count; i++)
         {
-            var range = rangesForRow[i];
+            var interval = intervalsForRow[i];
 
-            if (coveredRange.HasIntersect(range))
+            if (coveredInterval.HasIntersect(interval))
             {
-                coveredRange = coveredRange.Union(range);
-                rangesForRow.Remove(range);
+                coveredInterval = coveredInterval.Union(interval);
+                intervalsForRow.Remove(interval);
                 removedAny = true;
             }
         }
 
         if (!removedAny)
         {
-            nonOverlappingRanges.Add(coveredRange);
-            coveredRange = rangesForRow.First();
-            rangesForRow = rangesForRow.Skip(1).ToList();
+            nonOverlappingIntervals.Add(coveredInterval);
+            coveredInterval = intervalsForRow.First();
+            intervalsForRow = intervalsForRow.Skip(1).ToList();
         }
     }
 
-    nonOverlappingRanges.Add(coveredRange);
+    nonOverlappingIntervals.Add(coveredInterval);
 
-    return nonOverlappingRanges;
+    return nonOverlappingIntervals;
 }
 
 static bool GetSensorBeconPair(string? input, out SensorBeconPair? value)
@@ -129,7 +129,7 @@ class SensorBeconPair
         return p.Distance(SensorLocation) <= this.Range;
     }
 
-    public Range? GetCoveredRangeInRow(int y)
+    public ClosedInterval? GetCoveredIntervalForRow(int y)
     {
         int distanceY = Math.Abs(SensorLocation.Y - y);
 
@@ -137,43 +137,7 @@ class SensorBeconPair
 
         if (distanceX < 0) return null;
 
-        return new Range(SensorLocation.X - distanceX, SensorLocation.X + distanceX);
+        return new ClosedInterval(SensorLocation.X - distanceX, SensorLocation.X + distanceX);
     }
 }
 
-class Range
-{
-    public int Start { get; }
-    public int End { get; }
-
-    public Range (int start, int end)
-    {
-        Start = Math.Min(start, end);
-        End = Math.Max(start, end);
-    }
-
-    public bool HasIntersect(Range other)
-    {
-        if (this.End < other.Start) return false;
-        if (this.Start > other.End) return false;
-
-        return true;
-    }
-
-    public bool CoversWholeRange(Range other)
-    {
-        return other.Start >= this.Start && other.End <= this.End;
-    }
-
-    public bool ContainsPoint(int value)
-    {
-        return value >= this.Start && value <= this.End;
-    }
-
-    public Range Union(Range other)
-    {
-        if (!HasIntersect(other)) throw new Exception();
-
-        return new Range(Math.Min(this.Start, other.Start), Math.Max(this.End, other.End));
-    }
-}
