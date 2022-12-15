@@ -1,37 +1,19 @@
 ﻿using System.Drawing;
 using System.Text.RegularExpressions;
 
+//var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
 var pairs = new InputProvider<SensorBeconPair?>("Input.txt", GetSensorBeconPair).Where(w => w != null).Cast<SensorBeconPair>().ToList();
-
-var minX = pairs.SelectMany(w => new[] { w.SensorLocation.X, w.BeconLocation.X }).Min();
-var maxX = pairs.SelectMany(w => new[] { w.SensorLocation.X, w.BeconLocation.X }).Max();
-
-var maxRange = pairs.Max(w => w.Range);
 
 int targetY = 2000000;
 
-int canNotExist = 0;
+var rangesOnTargetRow = GetRangesForRow(targetY, pairs);
 
-for (int x = minX - maxRange; x <= maxX + maxRange; x++)
-{
-    var point = new Point(x, targetY);
+int canNotExist = rangesOnTargetRow.Sum(w => w.End - w.Start);
 
-    foreach (var pair in pairs)
-    {
-        if (pair.BeconLocation.X == x && pair.BeconLocation.Y == targetY)
-        {
-            canNotExist--;
-            break;
-        }
-    }
-
-    if (pairs.Any(w => w.CoversPoint(point)))
-    {
-        canNotExist++;
-    }
-}
-
+//Console.WriteLine(stopwatch.ElapsedMilliseconds);
 Console.WriteLine($"Part 1: {canNotExist}");
+//stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
 Point? beconPoint = null;
 
@@ -58,13 +40,13 @@ for (int y = 0; y <= searchSpace && beconPoint == null; y++)
 
     beconPoint = new Point(xThresholdValues[0] + 1, y);
 
-    // Assert, not needed
     if (pairs.Any(w => w.CoversPoint(beconPoint.Value)))
         throw new Exception();
 }
 
 if (beconPoint == null) throw new Exception();
 
+//Console.WriteLine(stopwatch.ElapsedMilliseconds);
 Console.WriteLine($"Part 2: {((long)beconPoint.Value.X * 4000000) + beconPoint.Value.Y}");
 
 static IEnumerable<Range> GetRangesForRow(int y, IEnumerable<SensorBeconPair> pairs)
@@ -92,7 +74,6 @@ static IEnumerable<Range> GetRangesForRow(int y, IEnumerable<SensorBeconPair> pa
                 coveredRange = coveredRange.Union(range);
                 rangesForRow.Remove(range);
                 removedAny = true;
-                //break;
             }
         }
 
