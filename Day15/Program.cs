@@ -18,12 +18,11 @@ Console.WriteLine($"Part 1: {canNotExist}");
 Point? beconPoint = null;
 
 int searchSpace = 4000000;
+var wholeRowRange = new Range(0, searchSpace);
 
 for (int y = 0; y <= searchSpace && beconPoint == null; y++)
 {
     var rangesForRow = GetRangesForRow(y, pairs);
-
-    var wholeRowRange = new Range(0, searchSpace);
 
     if (rangesForRow.Any(w => w.CoversWholeRange(wholeRowRange)))
     {
@@ -31,11 +30,10 @@ for (int y = 0; y <= searchSpace && beconPoint == null; y++)
     }
 
     var xThresholdValues = rangesForRow.SelectMany(w => new[] { w.Start, w.End }).OrderBy(w => w)
-        .Where(w => w >= 0)
-        .Where(w => w <= searchSpace)
+        .Where(w => wholeRowRange.ContainsPoint(w))
         .ToArray();
 
-    if (xThresholdValues.Length > 2)
+    if (xThresholdValues.Length != 2)
         throw new Exception();
 
     beconPoint = new Point(xThresholdValues[0] + 1, y);
@@ -165,6 +163,11 @@ class Range
     public bool CoversWholeRange(Range other)
     {
         return other.Start >= this.Start && other.End <= this.End;
+    }
+
+    public bool ContainsPoint(int value)
+    {
+        return value >= this.Start && value <= this.End;
     }
 
     public Range Union(Range other)
