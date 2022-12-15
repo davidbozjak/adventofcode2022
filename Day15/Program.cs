@@ -39,6 +39,38 @@ int searchSpace = 4000000;
 
 for (int y = 0; y <= searchSpace && beconPoint == null; y++)
 {
+    var rangesForRow = GetRangesForRow(y, pairs);
+
+    var wholeRowRange = new Range(0, searchSpace);
+
+    if (rangesForRow.Any(w => w.CoversWholeRange(wholeRowRange)))
+    {
+        continue;
+    }
+
+    var xThresholdValues = rangesForRow.SelectMany(w => new[] { w.Start, w.End }).OrderBy(w => w)
+        .Where(w => w >= 0)
+        .Where(w => w <= searchSpace)
+        .ToArray();
+
+    if (xThresholdValues.Length > 2)
+        throw new Exception();
+
+    beconPoint = new Point(xThresholdValues[0] + 1, y);
+
+    // Assert, not needed
+    if (pairs.Any(w => w.CoversPoint(beconPoint.Value)))
+        throw new Exception();
+}
+
+if (beconPoint == null) throw new Exception();
+
+Console.WriteLine($"Part 2: {((long)beconPoint.Value.X * 4000000) + beconPoint.Value.Y}");
+
+static IEnumerable<Range> GetRangesForRow(int y, IEnumerable<SensorBeconPair> pairs)
+{
+    var nonOverlappingRanges = new List<Range>();
+
     var rangesForRow = pairs.Select(w => w.GetCoveredRangeInRow(y))
         .Where(w => w != null)
         .Cast<Range>()
@@ -60,36 +92,22 @@ for (int y = 0; y <= searchSpace && beconPoint == null; y++)
                 coveredRange = coveredRange.Union(range);
                 rangesForRow.Remove(range);
                 removedAny = true;
-                break;
+                //break;
             }
         }
 
         if (!removedAny)
-            break;
-    }
-
-    var wholeRowRange = new Range(0, searchSpace);
-
-    if (coveredRange.CoversWholeRange(wholeRowRange))
-    {
-        continue;
-    }
-
-    for (int x = 0; x <= searchSpace; x++)
-    {
-        var point = new Point(x, y);
-
-        if (!pairs.Any(w => w.CoversPoint(point)))
         {
-            beconPoint = new Point(x, y);
-            break;
+            nonOverlappingRanges.Add(coveredRange);
+            coveredRange = rangesForRow.First();
+            rangesForRow = rangesForRow.Skip(1).ToList();
         }
     }
+
+    nonOverlappingRanges.Add(coveredRange);
+
+    return nonOverlappingRanges;
 }
-
-if (beconPoint == null) throw new Exception();
-
-Console.WriteLine($"Part 2: {((long)beconPoint.Value.X * 4000000) + beconPoint.Value.Y}");
 
 static bool GetSensorBeconPair(string? input, out SensorBeconPair? value)
 {
