@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 
 var valveRecords  = new InputProvider<ValveRecord?>("Input.txt", GetValveRecord).Where(w => w != null).Cast<ValveRecord>().ToList();
 
@@ -7,13 +8,14 @@ var valveFactory = new UniqueFactory<string, Valve>(w => new Valve(w));
 var valves = valveRecords.Select(w => w.Build(valveFactory)).ToHashSet();
 
 State2.nonZeroValves = valves.Where(w => w.FlowRate > 0).Count();
+State2.cachedPathfinder = new CachedPathfinder<Valve>();
 
 var startValve = valveFactory.GetOrCreateInstance("AA");
 
 Dictionary<string, int> memoizationDict = new();
 
 //var initialState = new State1(0, startValve, 0, new HashSet<Valve>(), null, "Initial State");
-var initialState = new State2(0, startValve, startValve, 0, new HashSet<Valve>(), null, "Initial State", new List<Valve>(), new List<Valve>());
+var initialState = new State2(0, startValve, startValve, 0, new HashSet<Valve>(), valves.Where(w => w.FlowRate > 0).ToHashSet(), null, "Initial State", new List<Valve>(), new List<Valve>());
 
 var openSet = new PriorityQueue<State2, int>();
 openSet.Enqueue(initialState, 0);
@@ -36,7 +38,7 @@ while (openSet.Count > 0)
         if (currentBestState == null || current.CommulativeFlow > currentBestState.CommulativeFlow)
         {
             //current.PrintHistory(Console.WriteLine);
-            Console.WriteLine($"{DateTime.Now.TimeOfDay}: Found new best: {current.CommulativeFlow}");
+            Console.WriteLine($"{DateTime.Now.TimeOfDay}: Found new best: {current.CommulativeFlow} Open nodes: {openSet.Count}");
             currentBestState = current;
         }
         continue;
@@ -47,7 +49,7 @@ while (openSet.Count > 0)
         if (visitedSates.Contains(followingState.ToString()))
             continue;
 
-        visitedSates.Add(current.ToString());
+        visitedSates.Add(followingState.ToString());
 
         openSet.Enqueue(followingState, followingState.Minute - followingState.OpenValves.Count - followingState.CommulativeFlow);
     }
@@ -55,9 +57,16 @@ while (openSet.Count > 0)
 
 if (currentBestState == null) throw new Exception();
 
-Console.WriteLine($"Part 1: {currentBestState.CommulativeFlow}");
 
+Console.WriteLine();
+Console.WriteLine();
 currentBestState.PrintHistory(Console.WriteLine);
+
+Console.WriteLine();
+Console.WriteLine();
+Console.WriteLine($"Result: {currentBestState.CommulativeFlow}");
+
+
 
 static bool GetValveRecord(string? input, out ValveRecord? value)
 {
@@ -94,7 +103,8 @@ record ValveRecord(string Name, int FlowRate, IEnumerable<string> ReachableValve
     }
 }
 
-class Valve
+[System.Diagnostics.DebuggerDisplay("{Name}")]
+class Valve : INode, IEquatable<Valve>
 {
     public string Name { get; }
 
@@ -112,5 +122,35 @@ class Valve
         this.connectedValves.AddRange(connectedValves);
     }
 
+    public bool Equals(Valve? other)
+    {
+        return base.Equals(other);
+    }
+
     public IEnumerable<Valve> ConnectedValves => this.connectedValves;
+
+    public int Cost => 1;
+}
+
+class CachedPathfinder<T>
+    where T : class, INode, IEquatable<T>
+{
+    private readonly Dictionary<(T, T), List<T>> memcache = new();
+
+    public List<T> FindPath(T start, T goal, Func<T, int> GetHeuristicCost, Func<T, IEnumerable<T>> GetNeighbours)
+    {
+        var key = (start, goal);
+
+        if (!memcache.ContainsKey(key))
+        {
+            var path = AStarPathfinder.FindPath(start, goal, GetHeuristicCost, GetNeighbours);
+
+            if (path == null)
+                throw new Exception();
+
+            memcache[key] = path;
+        }
+
+        return memcache[key];
+    }
 }
