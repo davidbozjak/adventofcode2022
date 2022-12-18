@@ -1,41 +1,67 @@
-﻿using System.Runtime.CompilerServices;
+﻿Console.WriteLine($"Part 1: Height after 2022 pieces: {GetHeightAfterPlacingNPieces(2022)}");
+Console.WriteLine($"Part 2: Height after 1000000000000 pieces: {GetHeightAfterPlacingNPieces(1000000000000)}");
 
-var directionsProvider = new CyclicalElementProvider<PushDirection>(new StringInputProvider("Input.txt").First().ToCharArray()
-    .Select(GetDirectionFromChar)
-    .Select(w => new Func<PushDirection>(() => w))
-    .ToArray()
-);
-
-var orderedPieceProvider = new CyclicalElementProvider<TetrisPiece>(new Func<TetrisPiece>[]
+static long GetHeightAfterPlacingNPieces(long numberOfPiecesToPlace)
 {
-    () => new MinusTetrisPiece(),
-    () => new PlusTetrisPiece(),
-    () => new LTetrisPiece(),
-    () => new VerticalLineTetrisPiece(),
-    () => new SquareTetrisPiece()
-});
+    var directionsProvider = new CyclicalElementProvider<PushDirection>(new StringInputProvider("Input.txt").First().ToCharArray()
+        .Select(GetDirectionFromChar)
+        .Select(w => new Func<PushDirection>(() => w))
+        .ToArray()
+    );
 
-var tetrisWorld = new TetrisWorld(7, orderedPieceProvider);
+    var orderedPieceProvider = new CyclicalElementProvider<TetrisPiece>(new Func<TetrisPiece>[]
+    {
+        () => new MinusTetrisPiece(),
+        () => new PlusTetrisPiece(),
+        () => new LTetrisPiece(),
+        () => new VerticalLineTetrisPiece(),
+        () => new SquareTetrisPiece()
+    });
 
-var printer = new WorldPrinter(skipEmptyLines: false);
+    var tetrisWorld = new TetrisWorld(7, orderedPieceProvider);
 
-int step = 0;
+    int heightAtFirstCylce = 0;
+    int heighIncreasePerCylce = 0;
+    int numberOfPiecesAtFirstCycle = 0;
+    int piecesIncreasePerCylce = 0;
 
-while (tetrisWorld.PlacedPiecesCount < 1000000000000)
-{
-    step++;
-    tetrisWorld.MakeStep(directionsProvider.Current);
-    
-    //printer.Print(tetrisWorld, 0, 7, 0, tetrisWorld.Height + 5);
-    //Console.WriteLine($"Step {step} Direction: {directionsProvider.Current}");
-    //Console.WriteLine($"Current height: {tetrisWorld.Height} Total Placed Pieces {tetrisWorld.PlacedPiecesCount}");
-    //Console.WriteLine($"Press any key to continue");
-    //Console.ReadKey();
+    int cycleLength = directionsProvider.CycleLength * orderedPieceProvider.CycleLength;
 
-    directionsProvider.MoveNext();
+    long numberOfPiecesToSimulate = long.MaxValue;
+
+    for (int step = 0, cycle = 0; tetrisWorld.PlacedPiecesCount < numberOfPiecesToSimulate; step++)
+    {
+        tetrisWorld.MakeStep(directionsProvider.Current);
+
+        if (step % cycleLength == 0)
+        {
+            if (cycle == 1)
+            {
+                heightAtFirstCylce = tetrisWorld.Height;
+                numberOfPiecesAtFirstCycle = tetrisWorld.PlacedPiecesCount;
+            }
+            else if (cycle == 2)
+            {
+                int heightAtSecondCylce = tetrisWorld.Height;
+                int numberOfPiecesAtSecondCycle = tetrisWorld.PlacedPiecesCount;
+
+                heighIncreasePerCylce = heightAtSecondCylce - heightAtFirstCylce;
+                piecesIncreasePerCylce = numberOfPiecesAtSecondCycle - numberOfPiecesAtFirstCycle;
+
+                long remainder = numberOfPiecesToPlace % piecesIncreasePerCylce;
+                numberOfPiecesToSimulate = 2 * piecesIncreasePerCylce + remainder;
+            }
+
+            cycle++;
+        }
+
+        directionsProvider.MoveNext();
+    }
+
+    long numberOfCycles = (numberOfPiecesToPlace / piecesIncreasePerCylce) - 2;
+
+    return tetrisWorld.Height + (numberOfCycles * heighIncreasePerCylce);
 }
-
-Console.WriteLine($"Current height: {tetrisWorld.Height} Total Placed Pieces {tetrisWorld.PlacedPiecesCount}");
 
 static PushDirection GetDirectionFromChar(char c) =>
     c switch {

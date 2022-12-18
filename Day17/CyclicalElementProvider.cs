@@ -12,6 +12,8 @@ class CyclicalElementProvider<T> : IEnumerator<T>, IEnumerable<T>
         this.funcs = funcs.ToArray();
     }
 
+    public int CycleLength => this.funcs.Length;
+
     public T Current => this.funcs[this.currentIndex]();
 
     object IEnumerator.Current => this.Current;
