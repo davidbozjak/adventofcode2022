@@ -51,7 +51,7 @@ while (openSet.Count > 0)
 
         visitedSates.Add(followingState.ToString());
 
-        openSet.Enqueue(followingState, followingState.Minute - followingState.OpenValves.Count - followingState.CommulativeFlow);
+        openSet.Enqueue(followingState, -followingState.CommulativeFlow);
     }
 }
 

@@ -145,6 +145,6 @@ record State2(int Minute, Valve CurrentLocation1, Valve CurrentLocation2, int Co
 
     public override string ToString()
     {
-        return $"== Minute {this.Minute} Player1 at {this.CurrentLocation1.Name} on the way to {this.Player1Path.Last().Name} Player2 at {this.CurrentLocation2.Name} on the way to {this.Player2Path.Last().Name}. Commulative {this.CommulativeFlow} Open Valves {string.Join(", ", this.OpenValves.Select(w => w.Name).OrderBy(w => w))}, releasing {GetFlowDuringThisState()}";
+        return $"[Minute{this.Minute}][P1{this.CurrentLocation1.Name}]->[{this.Player1Path.Last().Name}][P2{this.CurrentLocation2.Name}->{this.Player2Path.Last().Name}][{this.CommulativeFlow}][{string.Join(", ", this.OpenValves.Select(w => w.Name).OrderBy(w => w))}][{GetFlowDuringThisState()}]";
     }
 }
