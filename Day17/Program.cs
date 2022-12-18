@@ -32,6 +32,7 @@ static long GetHeightAfterPlacingNPieces(long numberOfPiecesToPlace)
     for (int step = 0, cycle = 0; tetrisWorld.PlacedPiecesCount < numberOfPiecesToSimulate; step++)
     {
         tetrisWorld.MakeStep(directionsProvider.Current);
+        directionsProvider.MoveNext();
 
         if (step % cycleLength == 0)
         {
@@ -54,8 +55,6 @@ static long GetHeightAfterPlacingNPieces(long numberOfPiecesToPlace)
 
             cycle++;
         }
-
-        directionsProvider.MoveNext();
     }
 
     long numberOfCycles = (numberOfPiecesToPlace / piecesIncreasePerCylce) - 2;
