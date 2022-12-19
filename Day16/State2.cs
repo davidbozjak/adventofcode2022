@@ -45,10 +45,6 @@ record State2(int Minute, Valve CurrentLocation1, Valve CurrentLocation2, int Co
                     newOpenValves.Add(this.CurrentLocation1);
                     hasOpenedValve = true;
                 }
-                else
-                {
-                    System.Diagnostics.Debugger.Break();
-                }
 
                 var paths = GetPathsToAllValvesLeftToOpen(this.CurrentLocation1);
 
@@ -79,10 +75,6 @@ record State2(int Minute, Valve CurrentLocation1, Valve CurrentLocation2, int Co
                 {
                     newOpenValves.Add(this.CurrentLocation2);
                     hasOpenedValve = true;
-                }
-                else
-                {
-                    System.Diagnostics.Debugger.Break();
                 }
 
                 var paths = GetPathsToAllValvesLeftToOpen(this.CurrentLocation2);

@@ -1,7 +1,4 @@
-﻿abstract record CaveState(int Minute, int CommulativeFlow)
-    : SearchStateState(CommulativeFlow, -CommulativeFlow);
-
-record State1(int Minute, Valve CurrentLocation, int CommulativeFlow, HashSet<Valve> OpenValves, State1? PreviousState, string TransitionAction)
+﻿record State1(int Minute, Valve CurrentLocation, int CommulativeFlow, HashSet<Valve> OpenValves, State1? PreviousState, string TransitionAction)
     : CaveState(Minute, CommulativeFlow)
 {
     public static int nonZeroValves;
