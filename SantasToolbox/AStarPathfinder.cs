@@ -71,3 +71,26 @@ public static class AStarPathfinder
         return null;
     }
 }
+
+public class CachedPathfinder<T>
+    where T : class, INode, IEquatable<T>
+{
+    private readonly Dictionary<(T, T), List<T>> memcache = new();
+
+    public List<T> FindPath(T start, T goal, Func<T, int> GetHeuristicCost, Func<T, IEnumerable<T>> GetNeighbours)
+    {
+        var key = (start, goal);
+
+        if (!memcache.ContainsKey(key))
+        {
+            var path = AStarPathfinder.FindPath(start, goal, GetHeuristicCost, GetNeighbours);
+
+            if (path == null)
+                throw new Exception();
+
+            memcache[key] = path;
+        }
+
+        return memcache[key];
+    }
+}

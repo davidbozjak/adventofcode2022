@@ -6,55 +6,47 @@ var valveFactory = new UniqueFactory<string, Valve>(w => new Valve(w));
 
 var valves = valveRecords.Select(w => w.Build(valveFactory)).ToHashSet();
 
+CaveState.nonZeroValves = valves.Where(w => w.FlowRate > 0).Count();
+CaveState.cachedPathfinder = new CachedPathfinder<Valve>();
+int maxFlow = valves.Sum(w => w.FlowRate);
+
 var startValve = valveFactory.GetOrCreateInstance("AA");
 
-Dictionary<string, int> memoizationDict = new();
-
-var initialState = new State(0, startValve, 0, new HashSet<Valve>(), null, "Initial State");
-
-var openSet = new PriorityQueue<State, int>();
-openSet.Enqueue(initialState, 0);
-
 int maxMinutes = 30;
+var initialStatePart1 = new State1(0, startValve, 0, new HashSet<Valve>(), valves.Where(w => w.FlowRate > 0).ToHashSet(), null, "Initial State", new List<Valve>());
 
-State? currentBestState = null;
+var part1Searcher = new PriorityQueueSpaceSearcher<State1>() { EnableTracing = true, DiscardVisited = true };
 
-HashSet<string> visitedSates = new();
+var bestStatePart1 = part1Searcher.FindHighestScore(initialStatePart1,
+    state => state.Minute == maxMinutes,
+    (state, currentBestState) => ShouldDiscardState(state, currentBestState));
 
-while (openSet.Count > 0)
+Console.WriteLine($"Part 1: {bestStatePart1.CommulativeFlow}");
+
+maxMinutes = 26;
+
+var initialStatePart2 = new State2(0, startValve, startValve, 0, new HashSet<Valve>(), valves.Where(w => w.FlowRate > 0).ToHashSet(), null, "Initial State", new List<Valve>(), new List<Valve>());
+
+var part2Searcher = new PriorityQueueSpaceSearcher<State2>() { EnableTracing = true, DiscardVisited = true };
+
+var bestStatePart2 = part2Searcher.FindHighestScore(initialStatePart2,
+    state => state.Minute == maxMinutes,
+    ShouldDiscardState);
+
+Console.WriteLine($"Part 2: {bestStatePart2.CommulativeFlow}");
+
+bool ShouldDiscardState(CaveState state, CaveState? currentBestState)
 {
-    var current = openSet.Dequeue();
-
-    if (current.Minute > maxMinutes)
-        continue;
-
-    if (current.Minute == maxMinutes)
+    if (currentBestState != null)
     {
-        if (currentBestState == null || current.CommulativeFlow > currentBestState.CommulativeFlow)
-        {
-            //current.PrintHistory(Console.WriteLine);
-            Console.WriteLine($"Found new best: {current.CommulativeFlow}");
-            currentBestState = current;
-        }
-        continue;
+        int minutesLeft = maxMinutes - state.Minute;
+
+        if (currentBestState.CommulativeFlow > state.CommulativeFlow + (maxFlow * minutesLeft))
+            return true;
     }
 
-    foreach (var followingState in current.GetFollowingStates())
-    {
-        if (visitedSates.Contains(followingState.ToString()))
-            continue;
-
-        visitedSates.Add(current.ToString());
-
-        openSet.Enqueue(followingState, followingState.Minute - followingState.OpenValves.Count - followingState.CommulativeFlow);
-    }
+    return false;
 }
-
-if (currentBestState == null) throw new Exception();
-
-Console.WriteLine($"Part 1: {currentBestState.CommulativeFlow}");
-
-currentBestState.PrintHistory(Console.WriteLine);
 
 static bool GetValveRecord(string? input, out ValveRecord? value)
 {
@@ -77,69 +69,23 @@ static bool GetValveRecord(string? input, out ValveRecord? value)
     return true;
 }
 
-record State(int Minute, Valve CurrentLocation, int CommulativeFlow, HashSet<Valve> OpenValves, State? PreviousState, string TransitionAction)
+abstract record CaveState(int Minute, int CommulativeFlow, HashSet<Valve> OpenValves, HashSet<Valve> ValvesToOpen)
+    : SearchStateState(CommulativeFlow, -CommulativeFlow)
 {
-    public IEnumerable<State> GetFollowingStates()
+    public static int nonZeroValves;
+    public static CachedPathfinder<Valve> cachedPathfinder;
+
+    protected IEnumerable<List<Valve>> GetPathsToAllValvesLeftToOpen(Valve startLocation)
     {
-        yield return NewState_JustStandInPlace();
-
-        foreach (var newState in NewState_MoveToNeighbour())
-            yield return newState;
-
-        foreach (var newState in NewState_OpenThisValve())
-            yield return newState;
-    }
-
-    public void PrintHistory(Action<string> printAction)
-    {
-        if (this.PreviousState != null)
-            this.PreviousState.PrintHistory(printAction);
-
-        printAction(this.ToString());
-    }
-
-    private State NewState_JustStandInPlace()
-    {
-        return new State(this.Minute + 1, this.CurrentLocation, this.CommulativeFlow + GetFlowDuringThisState(), this.OpenValves, this, "Stand in place");
-    }
-
-    private IEnumerable<State> NewState_MoveToNeighbour()
-    {
-        foreach (var neighbour in this.CurrentLocation.ConnectedValves)
+        foreach (var endLocation in this.ValvesToOpen)
         {
-            //don't go to neighbour if it is open except if it has an unopened neighbour
-            if (this.OpenValves.Contains(neighbour))
-            {
-                if (neighbour.ConnectedValves.All(w => w.FlowRate == 0 || this.OpenValves.Contains(w)))
-                    continue;
-            }
-
-            yield return new State(this.Minute + 1, neighbour, this.CommulativeFlow + GetFlowDuringThisState(), this.OpenValves, this, $"Move to {neighbour.Name}");
+            yield return cachedPathfinder.FindPath(startLocation, endLocation, _ => 0, w => w.ConnectedValves);
         }
     }
 
-    private IEnumerable<State> NewState_OpenThisValve()
-    {
-        if (this.CurrentLocation.FlowRate <= 0)
-            yield break;
-
-        if (this.OpenValves.Contains(this.CurrentLocation))
-            yield break;
-
-        var newOpenValves = this.OpenValves.ToHashSet();
-        newOpenValves.Add(this.CurrentLocation);
-
-        yield return new State(this.Minute + 1, CurrentLocation, this.CommulativeFlow + GetFlowDuringThisState(), newOpenValves, this, $"Open Valve {this.CurrentLocation.Name}");
-    }
-
-    private int GetFlowDuringThisState()
+    protected int GetFlowDuringThisState()
     {
         return this.OpenValves.Sum(w => w.FlowRate);
-    }
-
-    public override string ToString()
-    {
-        return $"== Minute {this.Minute} at {this.CurrentLocation.Name} Commulative {this.CommulativeFlow} =={Environment.NewLine}Valves {string.Join(", ", this.OpenValves.Select(w => w.Name).OrderBy(w => w))} are open, releasing {GetFlowDuringThisState()} pressure.{Environment.NewLine}{this.TransitionAction}";
     }
 }
 
@@ -157,7 +103,8 @@ record ValveRecord(string Name, int FlowRate, IEnumerable<string> ReachableValve
     }
 }
 
-class Valve
+[System.Diagnostics.DebuggerDisplay("{Name}")]
+class Valve : INode, IEquatable<Valve>
 {
     public string Name { get; }
 
@@ -175,5 +122,12 @@ class Valve
         this.connectedValves.AddRange(connectedValves);
     }
 
+    public bool Equals(Valve? other)
+    {
+        return base.Equals(other);
+    }
+
     public IEnumerable<Valve> ConnectedValves => this.connectedValves;
+
+    public int Cost => 1;
 }
