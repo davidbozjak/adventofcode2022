@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 var valveRecords  = new InputProvider<ValveRecord?>("Input.txt", GetValveRecord).Where(w => w != null).Cast<ValveRecord>().ToList();
 
@@ -21,6 +20,7 @@ var openSet = new PriorityQueue<State2, int>();
 openSet.Enqueue(initialState, 0);
 
 int maxMinutes = 26;
+int maxFlow = valves.Sum(w => w.FlowRate);
 
 State2? currentBestState = null;
 
@@ -51,12 +51,19 @@ while (openSet.Count > 0)
 
         visitedSates.Add(followingState.ToString());
 
+        if (currentBestState != null)
+        {
+            int minutesLeft = maxMinutes - followingState.Minute;
+
+            if (currentBestState.CommulativeFlow > followingState.CommulativeFlow + (maxFlow * minutesLeft))
+                continue;
+        }
+        
         openSet.Enqueue(followingState, -followingState.CommulativeFlow);
     }
 }
 
 if (currentBestState == null) throw new Exception();
-
 
 Console.WriteLine();
 Console.WriteLine();
@@ -65,8 +72,6 @@ currentBestState.PrintHistory(Console.WriteLine);
 Console.WriteLine();
 Console.WriteLine();
 Console.WriteLine($"Result: {currentBestState.CommulativeFlow}");
-
-
 
 static bool GetValveRecord(string? input, out ValveRecord? value)
 {
@@ -130,27 +135,4 @@ class Valve : INode, IEquatable<Valve>
     public IEnumerable<Valve> ConnectedValves => this.connectedValves;
 
     public int Cost => 1;
-}
-
-class CachedPathfinder<T>
-    where T : class, INode, IEquatable<T>
-{
-    private readonly Dictionary<(T, T), List<T>> memcache = new();
-
-    public List<T> FindPath(T start, T goal, Func<T, int> GetHeuristicCost, Func<T, IEnumerable<T>> GetNeighbours)
-    {
-        var key = (start, goal);
-
-        if (!memcache.ContainsKey(key))
-        {
-            var path = AStarPathfinder.FindPath(start, goal, GetHeuristicCost, GetNeighbours);
-
-            if (path == null)
-                throw new Exception();
-
-            memcache[key] = path;
-        }
-
-        return memcache[key];
-    }
 }
