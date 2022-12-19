@@ -1,8 +1,17 @@
-﻿record State1(int Minute, Valve CurrentLocation, int CommulativeFlow, HashSet<Valve> OpenValves, State1? PreviousState, string TransitionAction)
+﻿abstract record CaveState(int Minute, int CommulativeFlow)
+    : SearchStateState(CommulativeFlow, -CommulativeFlow);
+
+record State1(int Minute, Valve CurrentLocation, int CommulativeFlow, HashSet<Valve> OpenValves, State1? PreviousState, string TransitionAction)
+    : CaveState(Minute, CommulativeFlow)
 {
     public static int nonZeroValves;
 
-    public IEnumerable<State1> GetFollowingStates()
+    public override string GetStringHash()
+    {
+        return this.ToString();
+    }
+
+    public override IEnumerable<State1> GetSubsequentStates()
     {
         foreach (var newState in NewState_JustStandInPlace())
             yield return newState;

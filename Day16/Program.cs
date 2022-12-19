@@ -6,72 +6,109 @@ var valveFactory = new UniqueFactory<string, Valve>(w => new Valve(w));
 
 var valves = valveRecords.Select(w => w.Build(valveFactory)).ToHashSet();
 
-State2.nonZeroValves = valves.Where(w => w.FlowRate > 0).Count();
+var nonZeroValves = valves.Where(w => w.FlowRate > 0).Count();
+State1.nonZeroValves = nonZeroValves;
+State2.nonZeroValves = nonZeroValves;
 State2.cachedPathfinder = new CachedPathfinder<Valve>();
+int maxFlow = valves.Sum(w => w.FlowRate);
 
 var startValve = valveFactory.GetOrCreateInstance("AA");
 
-Dictionary<string, int> memoizationDict = new();
+int maxMinutes = 30;
+var initialStatePart1 = new State1(0, startValve, 0, new HashSet<Valve>(), null, "Initial State");
+
+var part1Searcher = new PriorityQueueSpaceSearcher<State1>() { EnableTracing = true, DiscardVisited = true };
+
+var bestStatePart1 = part1Searcher.FindHighestScore(initialStatePart1,
+    state => state.Minute == maxMinutes,
+    (state, currentBestState) => ShouldDiscardState(state, currentBestState));
+
+Console.WriteLine($"Part 1: {bestStatePart1.CommulativeFlow}");
+
+maxMinutes = 26;
+
+var initialStatePart2 = new State2(0, startValve, startValve, 0, new HashSet<Valve>(), valves.Where(w => w.FlowRate > 0).ToHashSet(), null, "Initial State", new List<Valve>(), new List<Valve>());
+
+var part2Searcher = new PriorityQueueSpaceSearcher<State2>() { EnableTracing = true, DiscardVisited = true };
+
+var bestStatePart2 = part2Searcher.FindHighestScore(initialStatePart2, 
+    state => state.Minute == maxMinutes, 
+    (state, currentBestState) => ShouldDiscardState(state, currentBestState));
+
+
 
 //var initialState = new State1(0, startValve, 0, new HashSet<Valve>(), null, "Initial State");
-var initialState = new State2(0, startValve, startValve, 0, new HashSet<Valve>(), valves.Where(w => w.FlowRate > 0).ToHashSet(), null, "Initial State", new List<Valve>(), new List<Valve>());
+//var initialState = new State2(0, startValve, startValve, 0, new HashSet<Valve>(), valves.Where(w => w.FlowRate > 0).ToHashSet(), null, "Initial State", new List<Valve>(), new List<Valve>());
 
-var openSet = new PriorityQueue<State2, int>();
-openSet.Enqueue(initialState, 0);
+//var openSet = new PriorityQueue<State2, int>();
+//openSet.Enqueue(initialState, 0);
 
-int maxMinutes = 26;
-int maxFlow = valves.Sum(w => w.FlowRate);
+//int maxMinutes = 26;
+//int maxFlow = valves.Sum(w => w.FlowRate);
 
-State2? currentBestState = null;
+//State2? currentBestState = null;
 
-HashSet<string> visitedSates = new();
+//HashSet<string> visitedSates = new();
 
-while (openSet.Count > 0)
+//while (openSet.Count > 0)
+//{
+//    var current = openSet.Dequeue();
+
+//    if (current.Minute > maxMinutes)
+//        continue;
+
+//    if (current.Minute == maxMinutes)
+//    {
+//        if (currentBestState == null || current.CommulativeFlow > currentBestState.CommulativeFlow)
+//        {
+//            //current.PrintHistory(Console.WriteLine);
+//            Console.WriteLine($"{DateTime.Now.TimeOfDay}: Found new best: {current.CommulativeFlow} Open nodes: {openSet.Count}");
+//            currentBestState = current;
+//        }
+//        continue;
+//    }
+
+//    foreach (var followingState in current.GetFollowingStates())
+//    {
+//        if (visitedSates.Contains(followingState.ToString()))
+//            continue;
+
+//        visitedSates.Add(followingState.ToString());
+
+//        if (currentBestState != null)
+//        {
+//            int minutesLeft = maxMinutes - followingState.Minute;
+
+//            if (currentBestState.CommulativeFlow > followingState.CommulativeFlow + (maxFlow * minutesLeft))
+//                continue;
+//        }
+
+//        openSet.Enqueue(followingState, -followingState.CommulativeFlow);
+//    }
+//}
+
+//if (currentBestState == null) throw new Exception();
+
+//Console.WriteLine();
+//Console.WriteLine();
+//currentBestState.PrintHistory(Console.WriteLine);
+
+//Console.WriteLine();
+//Console.WriteLine();
+//Console.WriteLine($"Result: {currentBestState.CommulativeFlow}");
+
+bool ShouldDiscardState(CaveState state, CaveState? currentBestState)
 {
-    var current = openSet.Dequeue();
-
-    if (current.Minute > maxMinutes)
-        continue;
-
-    if (current.Minute == maxMinutes)
+    if (currentBestState != null)
     {
-        if (currentBestState == null || current.CommulativeFlow > currentBestState.CommulativeFlow)
-        {
-            //current.PrintHistory(Console.WriteLine);
-            Console.WriteLine($"{DateTime.Now.TimeOfDay}: Found new best: {current.CommulativeFlow} Open nodes: {openSet.Count}");
-            currentBestState = current;
-        }
-        continue;
+        int minutesLeft = maxMinutes - state.Minute;
+
+        if (currentBestState.CommulativeFlow > state.CommulativeFlow + (maxFlow * minutesLeft))
+            return true;
     }
 
-    foreach (var followingState in current.GetFollowingStates())
-    {
-        if (visitedSates.Contains(followingState.ToString()))
-            continue;
-
-        visitedSates.Add(followingState.ToString());
-
-        if (currentBestState != null)
-        {
-            int minutesLeft = maxMinutes - followingState.Minute;
-
-            if (currentBestState.CommulativeFlow > followingState.CommulativeFlow + (maxFlow * minutesLeft))
-                continue;
-        }
-        
-        openSet.Enqueue(followingState, -followingState.CommulativeFlow);
-    }
+    return false;
 }
-
-if (currentBestState == null) throw new Exception();
-
-Console.WriteLine();
-Console.WriteLine();
-currentBestState.PrintHistory(Console.WriteLine);
-
-Console.WriteLine();
-Console.WriteLine();
-Console.WriteLine($"Result: {currentBestState.CommulativeFlow}");
 
 static bool GetValveRecord(string? input, out ValveRecord? value)
 {

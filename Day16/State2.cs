@@ -1,11 +1,17 @@
 ﻿using System.Text;
 
 record State2(int Minute, Valve CurrentLocation1, Valve CurrentLocation2, int CommulativeFlow, HashSet<Valve> OpenValves, HashSet<Valve> ValvesToOpen, State2? PreviousState, string TransitionAction, List<Valve> Player1Path, List<Valve> Player2Path)
+    : CaveState(Minute, CommulativeFlow)
 {
     public static int nonZeroValves;
     public static CachedPathfinder<Valve> cachedPathfinder;
 
-    public IEnumerable<State2> GetFollowingStates()
+    public override string GetStringHash()
+    {
+        return this.ToString();
+    }
+
+    public override IEnumerable<State2> GetSubsequentStates()
     {
         if (this.OpenValves.Count == nonZeroValves)
         {
