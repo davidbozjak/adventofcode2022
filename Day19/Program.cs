@@ -2,95 +2,61 @@
 
 var blueprints = new InputProvider<Blueprint?>("Input.txt", GetBlueprint).Where(w => w != null).Cast<Blueprint>().ToList();
 
-List<State> bestStatesPerBlueprint = new();
-
-foreach (var blueprint in blueprints)
-{
-    var initialState = new State(0, 0, 0, 0, 0, 1, 0, 0, 0, true, true, true, true, blueprint);
-
-    var bestState = SimulateFactory(initialState, 24);
-
-    bestStatesPerBlueprint.Add(bestState);
-}
-
+var bestStatesPerBlueprint = ProcessBlueprints(24, blueprints);
 Console.WriteLine($"Part 1: {bestStatesPerBlueprint.Sum(w => w.GetQuality())}");
 
-var firstThree = blueprints.Take(3).ToList();
-bestStatesPerBlueprint.Clear();
-
-foreach (var blueprint in firstThree)
-{
-    var initialState = new State(0, 0, 0, 0, 0, 1, 0, 0, 0, true, true, true, true, blueprint);
-
-    var bestState = SimulateFactory(initialState, 32);
-
-    bestStatesPerBlueprint.Add(bestState);
-}
-
+bestStatesPerBlueprint = ProcessBlueprints(32, blueprints.Take(3));
 Console.WriteLine($"Part 2: {bestStatesPerBlueprint.Select(w => w.NumberOfGeods).Aggregate((w1, w2) => w1 * w2)}");
 
-static State SimulateFactory(State initialState, int maxMinutes)
+static IEnumerable<State> ProcessBlueprints(int maxMinutes, IEnumerable<Blueprint> blueprints)
 {
-    var openSet = new PriorityQueue<State, int>();
-    openSet.Enqueue(initialState, 0);
+    var searcher = new PriorityQueueSpaceSearcher<State>() { DiscardVisited = false, EnableTracing = true };
 
-    State? currentBestState = null;
-
-    HashSet<string> visitedSates = new();
-
-    int maxCostOre = new[] { initialState.Costs.OreRobotCostOre, initialState.Costs.ClayRobotCostOre, initialState.Costs.ObsidianRobotCostOre, initialState.Costs.GeodeRobotCostOre }.Max();
-    int maxCostClay = new[] { initialState.Costs.ObsidianRobotCostClay }.Max();
-    int maxCostObsidian = new[] { initialState.Costs.GeodeRobotCostObsidian }.Max();
-
-    while (openSet.Count > 0)
+    foreach (var blueprint in blueprints)
     {
-        var current = openSet.Dequeue();
+        var initialState = new State(0, 0, 0, 0, 0, 1, 0, 0, 0, true, true, true, true, blueprint);
 
-        if (current.Minute > maxMinutes)
-            continue;
+        int maxCostOre = new[] { blueprint.OreRobotCostOre, blueprint.ClayRobotCostOre, blueprint.ObsidianRobotCostOre, blueprint.GeodeRobotCostOre }.Max();
+        int maxCostClay = new[] { blueprint.ObsidianRobotCostClay }.Max();
+        int maxCostObsidian = new[] { blueprint.GeodeRobotCostObsidian }.Max();
 
-        if (current.Minute == maxMinutes)
-        {
-            if (currentBestState == null || current.NumberOfGeods > currentBestState.NumberOfGeods)
-            {
-                //current.PrintHistory(Console.WriteLine);
-                //Console.WriteLine($"{DateTime.Now.TimeOfDay}: Found new best for {current.Costs.Id}: {current.NumberOfGeods} Open nodes: {openSet.Count}");
-                currentBestState = current;
-            }
-            continue;
-        }
+        var bestState = searcher.FindHighestScore(initialState,
+            state => state.Minute == maxMinutes,
+            (state, currentBestState) => DiscardState(state, currentBestState, maxCostOre, maxCostClay, maxCostObsidian, maxMinutes));
 
-        foreach (var followingState in current.GetFollowingStates())
-        {
-            if (followingState.NumberOfOreRobots > maxCostOre + 1)
-                continue;
-
-            if (followingState.NumberOfOreRobots > maxCostOre + 1 &&
-                followingState.NumberOfClayRobots > maxCostClay + 1)
-                continue;
-
-            if (followingState.NumberOfOreRobots > maxCostOre + 1 &&
-                followingState.NumberOfObsidianRobots > maxCostObsidian + 1)
-                continue;
-
-            //if building one geode robot per minute won't get you over the current best, don't continue this branch
-            if (currentBestState != null &&
-                followingState.NumberOfGeods + (Enumerable.Range(1, maxMinutes - followingState.Minute).Sum(w => followingState.NumberOfGeodRobots + w)) < currentBestState.NumberOfGeods)
-                continue;
-
-            //if not allowed to build anything, don't continue this branch
-            var allowedMatrix = new[] { followingState.AllowedToBuildOreRobot, followingState.AllowedToBuildClayRobot, followingState.AllowedToBuildObsidianRobot, followingState.AllowedToBuildGeodeRobot };
-            if (allowedMatrix.All(w => !w))
-                continue;
-
-            openSet.Enqueue(followingState, -followingState.GetSum());
-        }
+        yield return bestState;
     }
+}
 
-    if (currentBestState == null) throw new Exception();
+static bool DiscardState(State state, State? currentBestState, int maxCostOre, int maxCostClay, int maxCostObsidian, int maxMinutes)
+{
+    if (currentBestState == null)
+        return false;
 
-    return currentBestState;
+    if (state.NumberOfOreRobots > maxCostOre + 1)
+        return true;
 
+    if (state.NumberOfOreRobots > maxCostOre + 1 &&
+        state.NumberOfClayRobots > maxCostClay + 1)
+        return true;
+
+    if (state.NumberOfOreRobots > maxCostOre + 1 &&
+        state.NumberOfObsidianRobots > maxCostObsidian + 1)
+        return true;
+
+    //if building one geode robot per minute won't get you over the current best, don't continue this branch
+    if (currentBestState != null &&
+        state.NumberOfGeods + 
+            (Enumerable.Range(1, maxMinutes - state.Minute).Sum(w => state.NumberOfGeodRobots + w)) 
+                < currentBestState.NumberOfGeods)
+        return true;
+
+    //if not allowed to build anything, don't continue this branch
+    var allowedMatrix = new[] { state.AllowedToBuildOreRobot, state.AllowedToBuildClayRobot, state.AllowedToBuildObsidianRobot, state.AllowedToBuildGeodeRobot };
+    if (allowedMatrix.All(w => !w))
+        return true;
+
+    return false;
 }
 
 static bool GetBlueprint(string? input, out Blueprint? value)
@@ -115,8 +81,16 @@ record State(int Minute,
     int NumberOfOreRobots, int NumberOfClayRobots, int NumberOfObsidianRobots, int NumberOfGeodRobots,
     bool AllowedToBuildOreRobot, bool AllowedToBuildClayRobot, bool AllowedToBuildObsidianRobot, bool AllowedToBuildGeodeRobot,
     Blueprint Costs)
+    : SearchSpaceState(NumberOfGeods, 
+        -(Minute + NumberOfOre + NumberOfClay + NumberOfObsidian + NumberOfGeods
+            + NumberOfOreRobots + NumberOfClayRobots + NumberOfObsidianRobots + NumberOfGeodRobots))
 {
-    public IEnumerable<State> GetFollowingStates()
+    public override string GetStringHash()
+    {
+        return this.ToString();
+    }
+
+    public override IEnumerable<SearchSpaceState> GetSubsequentStates()
     {
         int numberOfOre = this.NumberOfOre + this.NumberOfOreRobots;
         int numberOfClay = this.NumberOfClay + this.NumberOfClayRobots;
@@ -185,12 +159,6 @@ record State(int Minute,
     public int GetQuality()
     {
         return this.Costs.Id * this.NumberOfGeods;
-    }
-
-    public int GetSum()
-    {
-        var lst = GetAllStats();
-        return lst.Sum();
     }
 
     public override string ToString()

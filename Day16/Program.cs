@@ -70,7 +70,7 @@ static bool GetValveRecord(string? input, out ValveRecord? value)
 }
 
 abstract record CaveState(int Minute, int CommulativeFlow, HashSet<Valve> OpenValves, HashSet<Valve> ValvesToOpen)
-    : SearchStateState(CommulativeFlow, -CommulativeFlow)
+    : SearchSpaceState(CommulativeFlow, -CommulativeFlow)
 {
     public static int nonZeroValves;
     public static CachedPathfinder<Valve> cachedPathfinder;

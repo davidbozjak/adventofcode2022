@@ -1,14 +1,14 @@
 ﻿namespace SantasToolbox;
 
-public abstract record SearchStateState(int Score, int Priority)
+public abstract record SearchSpaceState(int Score, int Priority)
 {
-    public abstract IEnumerable<SearchStateState> GetSubsequentStates();
+    public abstract IEnumerable<SearchSpaceState> GetSubsequentStates();
 
     public abstract string GetStringHash();
 }
 
 public class PriorityQueueSpaceSearcher<T>
-    where T : SearchStateState
+    where T : SearchSpaceState
 {
     public bool DiscardVisited { get; init; }
 
