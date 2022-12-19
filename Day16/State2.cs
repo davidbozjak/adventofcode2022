@@ -1,11 +1,8 @@
 ﻿using System.Text;
 
 record State2(int Minute, Valve CurrentLocation1, Valve CurrentLocation2, int CommulativeFlow, HashSet<Valve> OpenValves, HashSet<Valve> ValvesToOpen, State2? PreviousState, string TransitionAction, List<Valve> Player1Path, List<Valve> Player2Path)
-    : CaveState(Minute, CommulativeFlow)
+    : CaveState(Minute, CommulativeFlow, OpenValves, ValvesToOpen)
 {
-    public static int nonZeroValves;
-    public static CachedPathfinder<Valve> cachedPathfinder;
-
     public override string GetStringHash()
     {
         return this.ToString();
@@ -128,18 +125,7 @@ record State2(int Minute, Valve CurrentLocation1, Valve CurrentLocation2, int Co
         printAction($"== Minute {this.Minute} Player1 at {this.CurrentLocation1.Name} Player2 at {this.CurrentLocation2.Name} Commulative {this.CommulativeFlow} =={Environment.NewLine}Valves {string.Join(", ", this.OpenValves.Select(w => w.Name).OrderBy(w => w))} are open, releasing {GetFlowDuringThisState()} pressure.{Environment.NewLine}{this.TransitionAction}");
     }
 
-    private IEnumerable<List<Valve>> GetPathsToAllValvesLeftToOpen(Valve startLocation)
-    {
-        foreach (var endLocation in this.ValvesToOpen)
-        {
-            yield return cachedPathfinder.FindPath(startLocation, endLocation, _ => 0, w => w.ConnectedValves);
-        }
-    }
-
-    private int GetFlowDuringThisState()
-    {
-        return this.OpenValves.Sum(w => w.FlowRate);
-    }
+    
 
     public override string ToString()
     {

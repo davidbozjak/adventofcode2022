@@ -6,16 +6,14 @@ var valveFactory = new UniqueFactory<string, Valve>(w => new Valve(w));
 
 var valves = valveRecords.Select(w => w.Build(valveFactory)).ToHashSet();
 
-var nonZeroValves = valves.Where(w => w.FlowRate > 0).Count();
-State1.nonZeroValves = nonZeroValves;
-State2.nonZeroValves = nonZeroValves;
-State2.cachedPathfinder = new CachedPathfinder<Valve>();
+CaveState.nonZeroValves = valves.Where(w => w.FlowRate > 0).Count();
+CaveState.cachedPathfinder = new CachedPathfinder<Valve>();
 int maxFlow = valves.Sum(w => w.FlowRate);
 
 var startValve = valveFactory.GetOrCreateInstance("AA");
 
 int maxMinutes = 30;
-var initialStatePart1 = new State1(0, startValve, 0, new HashSet<Valve>(), null, "Initial State");
+var initialStatePart1 = new State1(0, startValve, 0, new HashSet<Valve>(), valves.Where(w => w.FlowRate > 0).ToHashSet(), null, "Initial State", new List<Valve>());
 
 var part1Searcher = new PriorityQueueSpaceSearcher<State1>() { EnableTracing = true, DiscardVisited = true };
 
@@ -31,9 +29,11 @@ var initialStatePart2 = new State2(0, startValve, startValve, 0, new HashSet<Val
 
 var part2Searcher = new PriorityQueueSpaceSearcher<State2>() { EnableTracing = true, DiscardVisited = true };
 
-var bestStatePart2 = part2Searcher.FindHighestScore(initialStatePart2, 
+var bestStatePart2 = part2Searcher.FindHighestScore(initialStatePart2,
     state => state.Minute == maxMinutes,
     ShouldDiscardState);
+
+Console.WriteLine($"Part 2: {bestStatePart2.CommulativeFlow}");
 
 bool ShouldDiscardState(CaveState state, CaveState? currentBestState)
 {
@@ -69,8 +69,25 @@ static bool GetValveRecord(string? input, out ValveRecord? value)
     return true;
 }
 
-abstract record CaveState(int Minute, int CommulativeFlow)
-    : SearchStateState(CommulativeFlow, -CommulativeFlow);
+abstract record CaveState(int Minute, int CommulativeFlow, HashSet<Valve> OpenValves, HashSet<Valve> ValvesToOpen)
+    : SearchStateState(CommulativeFlow, -CommulativeFlow)
+{
+    public static int nonZeroValves;
+    public static CachedPathfinder<Valve> cachedPathfinder;
+
+    protected IEnumerable<List<Valve>> GetPathsToAllValvesLeftToOpen(Valve startLocation)
+    {
+        foreach (var endLocation in this.ValvesToOpen)
+        {
+            yield return cachedPathfinder.FindPath(startLocation, endLocation, _ => 0, w => w.ConnectedValves);
+        }
+    }
+
+    protected int GetFlowDuringThisState()
+    {
+        return this.OpenValves.Sum(w => w.FlowRate);
+    }
+}
 
 record ValveRecord(string Name, int FlowRate, IEnumerable<string> ReachableValves)
 {
