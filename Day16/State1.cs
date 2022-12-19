@@ -71,46 +71,6 @@
         printAction(this.ToString());
     }
 
-    //private IEnumerable<State1> NewState_JustStandInPlace()
-    //{
-    //    if (this.OpenValves.Count < nonZeroValves)
-    //        yield break;
-
-    //    yield return new State1(this.Minute + 1, this.CurrentLocation, this.CommulativeFlow + GetFlowDuringThisState(), this.OpenValves, this, "Stand in place");
-    //}
-
-    //private IEnumerable<State1> NewState_MoveToNeighbour()
-    //{
-    //    if (this.OpenValves.Count >= nonZeroValves)
-    //        yield break;
-
-    //    foreach (var neighbour in this.CurrentLocation.ConnectedValves)
-    //    {
-    //        //don't go to neighbour if it is open except if it has an unopened neighbour
-    //        if (this.OpenValves.Contains(neighbour))
-    //        {
-    //            if (neighbour.ConnectedValves.All(w => w.FlowRate == 0 || this.OpenValves.Contains(w)))
-    //                continue;
-    //        }
-
-    //        yield return new State1(this.Minute + 1, neighbour, this.CommulativeFlow + GetFlowDuringThisState(), this.OpenValves, this, $"Move to {neighbour.Name}");
-    //    }
-    //}
-
-    //private IEnumerable<State1> NewState_OpenThisValve()
-    //{
-    //    if (this.CurrentLocation.FlowRate <= 0)
-    //        yield break;
-
-    //    if (this.OpenValves.Contains(this.CurrentLocation))
-    //        yield break;
-
-    //    var newOpenValves = this.OpenValves.ToHashSet();
-    //    newOpenValves.Add(this.CurrentLocation);
-
-    //    yield return new State1(this.Minute + 1, CurrentLocation, this.CommulativeFlow + GetFlowDuringThisState(), newOpenValves, this, $"Open Valve {this.CurrentLocation.Name}");
-    //}
-
     public override string ToString()
     {
         return $"[Minute{this.Minute}][{this.CurrentLocation.Name}]->[{this.PathToTake.Last().Name}][{this.CommulativeFlow}][{string.Join(", ", this.OpenValves.Select(w => w.Name).OrderBy(w => w))}][{GetFlowDuringThisState()}]";

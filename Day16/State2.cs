@@ -125,8 +125,6 @@ record State2(int Minute, Valve CurrentLocation1, Valve CurrentLocation2, int Co
         printAction($"== Minute {this.Minute} Player1 at {this.CurrentLocation1.Name} Player2 at {this.CurrentLocation2.Name} Commulative {this.CommulativeFlow} =={Environment.NewLine}Valves {string.Join(", ", this.OpenValves.Select(w => w.Name).OrderBy(w => w))} are open, releasing {GetFlowDuringThisState()} pressure.{Environment.NewLine}{this.TransitionAction}");
     }
 
-    
-
     public override string ToString()
     {
         return $"[Minute{this.Minute}][P1{this.CurrentLocation1.Name}]->[{this.Player1Path.Last().Name}][P2{this.CurrentLocation2.Name}->{this.Player2Path.Last().Name}][{this.CommulativeFlow}][{string.Join(", ", this.OpenValves.Select(w => w.Name).OrderBy(w => w))}][{GetFlowDuringThisState()}]";
