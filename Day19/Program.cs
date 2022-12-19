@@ -65,18 +65,20 @@ static State SimulateFactory(State initialState, int maxMinutes)
             if (followingState.NumberOfOreRobots > maxCostOre + 1)
                 continue;
 
-            if (followingState.NumberOfOreRobots > maxCostOre + 1 && 
+            if (followingState.NumberOfOreRobots > maxCostOre + 1 &&
                 followingState.NumberOfClayRobots > maxCostClay + 1)
                 continue;
 
-            if (followingState.NumberOfOreRobots > maxCostOre + 1 && 
+            if (followingState.NumberOfOreRobots > maxCostOre + 1 &&
                 followingState.NumberOfObsidianRobots > maxCostObsidian + 1)
                 continue;
 
+            //if building one geode robot per minute won't get you over the current best, don't continue this branch
             if (currentBestState != null &&
                 followingState.NumberOfGeods + (Enumerable.Range(1, maxMinutes - followingState.Minute).Sum(w => followingState.NumberOfGeodRobots + w)) < currentBestState.NumberOfGeods)
                 continue;
 
+            //if not allowed to build anything, don't continue this branch
             var allowedMatrix = new[] { followingState.AllowedToBuildOreRobot, followingState.AllowedToBuildClayRobot, followingState.AllowedToBuildObsidianRobot, followingState.AllowedToBuildGeodeRobot };
             if (allowedMatrix.All(w => !w))
                 continue;
