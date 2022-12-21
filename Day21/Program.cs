@@ -213,9 +213,6 @@ class OperationMonkey : Monkey
         }
         else throw new Exception();
 
-        bool monk1 = monkey1.CanCalculate;
-        bool mknk2 = monkey2.CanCalculate;
-
         if (monkeyThatCouldNot is InputMonkey inpt)
         {
             inpt.SetInput(subResult);
