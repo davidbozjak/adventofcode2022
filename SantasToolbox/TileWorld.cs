@@ -46,10 +46,10 @@ namespace SantasToolbox
 
     public class TileWorld : IWorld
     {
-        private readonly List<Tile> allTiles = new();
+        private readonly Dictionary<Point, Tile> allTiles = new();
         private readonly bool allowDiagnoalNeighbours;
 
-        public IEnumerable<IWorldObject> WorldObjects => this.allTiles;
+        public IEnumerable<IWorldObject> WorldObjects => this.allTiles.Values;
 
         public TileWorld(IEnumerable<string> map, bool allowDiagnoalNeighbours, Func<int, int, char, Func<Tile, IEnumerable<Tile>>, Tile> tileCreatingFunc)
         {
@@ -62,7 +62,9 @@ namespace SantasToolbox
                 {
                     char c = line[x];
 
-                    allTiles.Add(tileCreatingFunc(x, y, c, GetTraversibleNeighboursOfTile));
+                    var point = new Point(x, y);
+
+                    allTiles[point] = tileCreatingFunc(x, y, c, GetTraversibleNeighboursOfTile);
                 }
                 y++;
             }
@@ -72,7 +74,13 @@ namespace SantasToolbox
             => GetTileAt(new Point(x, y));
 
         public Tile GetTileAt(Point point) =>
-            this.allTiles.First(w => w.Position == point);
+            this.allTiles[point];
+
+        public Tile? GetTileAtOrNull(int x, int y)
+            => GetTileAtOrNull(new Point(x, y));
+
+        public Tile? GetTileAtOrNull(Point point) =>
+            this.allTiles.ContainsKey(point) ? this.allTiles[point] : null;
 
         private IEnumerable<Tile> GetTraversibleNeighboursOfTile(Tile tile)
         {
@@ -80,7 +88,7 @@ namespace SantasToolbox
                 (p1, p2) => p1.IsNeighbourWithDiagnoals(p2) :
                 (p1, p2) => p1.IsNeighbour(p2);
 
-            return this.allTiles.Where(w => w.IsTraversable &&
+            return this.allTiles.Values.Where(w => w.IsTraversable &&
                 neighbourFunc(w.Position, tile.Position));
         }
     }
