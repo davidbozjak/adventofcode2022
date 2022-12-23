@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-class CyclicalElementProvider<T> : IEnumerator<T>, IEnumerable<T>
+public class CyclicalElementProvider<T> : IEnumerator<T>, IEnumerable<T>
 {
     private int currentIndex;
 

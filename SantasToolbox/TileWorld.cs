@@ -48,12 +48,16 @@ namespace SantasToolbox
     {
         private readonly Dictionary<Point, Tile> allTiles = new();
         private readonly bool allowDiagnoalNeighbours;
+        private readonly Func<int, int, char, Func<Tile, IEnumerable<Tile>>, Tile> tileCreatingFunc;
 
         public IEnumerable<IWorldObject> WorldObjects => this.allTiles.Values;
+
+        public char UnknownTileChar { get; set; } = ' ';
 
         public TileWorld(IEnumerable<string> map, bool allowDiagnoalNeighbours, Func<int, int, char, Func<Tile, IEnumerable<Tile>>, Tile> tileCreatingFunc)
         {
             this.allowDiagnoalNeighbours = allowDiagnoalNeighbours;
+            this.tileCreatingFunc = tileCreatingFunc;
 
             int y = 0;
             foreach (var line in map)
@@ -68,6 +72,19 @@ namespace SantasToolbox
                 }
                 y++;
             }
+        }
+
+        public Tile GetOrCreateTileAt(int x, int y) =>
+            GetOrCreateTileAt(new Point(x, y));
+
+        public Tile GetOrCreateTileAt(Point point)
+        {
+            if (!allTiles.ContainsKey(point))
+            {
+                allTiles[point] = tileCreatingFunc(point.X, point.Y, this.UnknownTileChar, GetTraversibleNeighboursOfTile);
+            }
+
+            return allTiles[point];
         }
 
         public Tile GetTileAt(int x, int y)
