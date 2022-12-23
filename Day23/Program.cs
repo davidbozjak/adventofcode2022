@@ -22,7 +22,7 @@ foreach (var elf in elfs)
 
 var printer = new WorldPrinter();
 
-int maxRounds = 10;
+int part1MaxRounds = 10;
 
 var cyclcicalOrderProvider = new CyclicalElementProvider<Direction>(new[] {
     () => Direction.East,
@@ -33,20 +33,35 @@ var cyclcicalOrderProvider = new CyclicalElementProvider<Direction>(new[] {
 
 for (int round = 0; true; round++)
 {
-    Console.WriteLine($"{DateTime.Now.TimeOfDay}: Round {round + 1}");
+    if (round % 100 == 0)
+        Console.WriteLine($"{DateTime.Now.TimeOfDay}: Round {round + 1}");
 
     var order = cyclcicalOrderProvider.Take(4).ToList();
     cyclcicalOrderProvider.MoveNext();
 
-    var elfsThatCanMoveThisRound = elfs.Where(w => w.HasNeighbouringElf(elfs));
+    var elfsLocations = elfs.ToDictionary(w => w.Position);
+
+    if (round == part1MaxRounds)
+    {
+        int maxX = elfs.Select(w => w.Position.X).Max();
+        int maxY = elfs.Select(w => w.Position.Y).Max();
+        int minX = elfs.Select(w => w.Position.X).Min();
+        int minY = elfs.Select(w => w.Position.Y).Min();
+
+        int totalSurfaceArea = (maxX - minX + 1) * (maxY - minY + 1);
+
+        Console.WriteLine($"{DateTime.Now.TimeOfDay}:Part 1: {totalSurfaceArea - elfs.Count}");
+    }
+
+    var elfsThatCanMoveThisRound = elfs.Where(w => w.HasNeighbouringElf(elfsLocations));
 
     if (!elfsThatCanMoveThisRound.Any())
     {
-        Console.WriteLine($"Part 2: No elf moved in round {round + 1}");
+        Console.WriteLine($"{DateTime.Now.TimeOfDay}:Part 2: No elf moved in round {round + 1}");
         break;
     }
 
-    var allTilesAndElfs = elfsThatCanMoveThisRound.Select(w => new { Elf = w, ChosenPosition = w.ConsiderNextPosition(order, elfs) })
+    var allTilesAndElfs = elfsThatCanMoveThisRound.Select(w => new { Elf = w, ChosenPosition = w.ConsiderNextPosition(order, elfsLocations) })
         .Where(w => w.ChosenPosition != null)
         .GroupBy(w => w.ChosenPosition)
         .ToDictionary(group => group.Key, elements => elements.ToArray());
@@ -65,22 +80,7 @@ for (int round = 0; true; round++)
     {
         elf.MoveToNextPosition();
     }
-
-    //var worldWithPoints = new WorldWithPath<Elf>(tileWorld, elfs);
-    //printer.Print(worldWithPoints);
-
-    //Console.WriteLine($"After Round {round + 1}, press any key to continue");
-    //Console.ReadKey();
 }
-
-int maxX = elfs.Select(w => w.Position.X).Max();
-int maxY = elfs.Select(w => w.Position.Y).Max();
-int minX = elfs.Select(w => w.Position.X).Min();
-int minY = elfs.Select(w => w.Position.Y).Min();
-
-int totalSurfaceArea = (maxX - minX + 1) * (maxY - minY + 1);
-
-Console.WriteLine($"Part 1: {totalSurfaceArea - elfs.Count}");
 
 enum Direction { North = 1, South = 2, East = 3, West = 4 };
 
@@ -102,11 +102,11 @@ class Elf : IWorldObject
 
     private Tile? proposedNextTile;
 
-    public Tile? ConsiderNextPosition(IEnumerable<Direction> directionOrder, IEnumerable<Elf> elfs)
+    public Tile? ConsiderNextPosition(IEnumerable<Direction> directionOrder, Dictionary<Point, Elf> elfsLocations)
     {
         proposedNextTile = null;
 
-        if (!this.HasNeighbouringElf(elfs))
+        if (!this.HasNeighbouringElf(elfsLocations))
             throw new Exception();
 
         foreach (var direction in directionOrder)
@@ -120,9 +120,7 @@ class Elf : IWorldObject
                 _ => throw new Exception()
             }).ToList();
 
-            var elfsOnTilesToConsider = elfs.Where(w => tilesToConsider.Contains(w.CurrentPosition));
-
-            if (!elfsOnTilesToConsider.Any())
+            if (!tilesToConsider.Any(w => elfsLocations.ContainsKey(w.Position)))
             {
                 // Assumption: the "true" north/east/west/south tile will always be the on position 0
                 proposedNextTile = tilesToConsider.First();
@@ -139,11 +137,11 @@ class Elf : IWorldObject
         proposedNextTile = null;
     }
 
-    public bool HasNeighbouringElf(IEnumerable<Elf> elfs)
+    public bool HasNeighbouringElf(Dictionary<Point, Elf> elfsLocations)
     {
         return new[] { GetNorthTiles(), GetSouthTiles(), GetEastTiles(), GetWestTiles() }
             .SelectMany(w => w)
-            .Any(w => elfs.Any(ww => ww.CurrentPosition == w));
+            .Any(w => elfsLocations.ContainsKey(w.Position));
     }
 
     private IEnumerable<Tile> GetNorthTiles()
