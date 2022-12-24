@@ -50,6 +50,16 @@ namespace SantasToolbox
         private readonly bool allowDiagnoalNeighbours;
         private readonly Func<int, int, char, Func<Tile, IEnumerable<Tile>>, Tile> tileCreatingFunc;
 
+        private readonly Cached<int> cachedMaxX;
+        private readonly Cached<int> cachedMaxY;
+        private readonly Cached<int> cachedMinX;
+        private readonly Cached<int> cachedMinY;
+
+        public int MaxX => this.cachedMaxX.Value;
+        public int MaxY => this.cachedMaxY.Value;
+        public int MinX => this.cachedMinX.Value;
+        public int MinY => this.cachedMinY.Value;
+
         public IEnumerable<IWorldObject> WorldObjects => this.allTiles.Values;
 
         public char UnknownTileChar { get; set; } = ' ';
@@ -72,6 +82,11 @@ namespace SantasToolbox
                 }
                 y++;
             }
+
+            this.cachedMaxX = new Cached<int>(() => this.allTiles.Keys.Select(w => w.X).Max());
+            this.cachedMaxY = new Cached<int>(() => this.allTiles.Keys.Select(w => w.Y).Max());
+            this.cachedMinX = new Cached<int>(() => this.allTiles.Keys.Select(w => w.X).Min());
+            this.cachedMinY = new Cached<int>(() => this.allTiles.Keys.Select(w => w.Y).Min());
         }
 
         public Tile GetOrCreateTileAt(int x, int y) =>
@@ -83,6 +98,11 @@ namespace SantasToolbox
             {
                 allTiles[point] = tileCreatingFunc(point.X, point.Y, this.UnknownTileChar, GetTraversibleNeighboursOfTile);
             }
+
+            this.cachedMaxX.Reset();
+            this.cachedMaxY.Reset();
+            this.cachedMinX.Reset();
+            this.cachedMinY.Reset();
 
             return allTiles[point];
         }
