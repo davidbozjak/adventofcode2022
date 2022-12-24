@@ -1,5 +1,4 @@
 ﻿using System.Drawing;
-using System.Security.Cryptography;
 
 var mapInput = new StringInputProvider("Input.txt");
 
