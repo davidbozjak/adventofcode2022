@@ -36,6 +36,7 @@ static long ConvertSnafuToDecimal(string snafu)
         baseMultiplier *= 5;
     }
 
+    // use input to also test conversion in the oposite direction
     if (ConvertDecimalToSnafu(number) != snafu)
         throw new Exception();
 
